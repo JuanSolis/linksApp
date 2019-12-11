@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../datebase');
+const {isLoggedIn} = require('../lib/auth.js');
 
-router.get('/add' , (request, response) => {
+router.get('/add' , isLoggedIn, (request, response) => {
     response.render('links/add');
 });
 
-router.post('/add', async (request, response) => {
+router.post('/add', isLoggedIn, async (request, response) => {
     const {title, url, description } = request.body;
     const newLink = {
         title,
@@ -19,25 +20,25 @@ router.post('/add', async (request, response) => {
     response.redirect('/links');
 });
 
-router.get('/', async (request, response)=> {
+router.get('/', isLoggedIn,  async (request, response)=> {
     const links = await pool.query('SELECT * FROM links');
-    console.log(links);
     response.render('links/list', {links});
 });
 
-router.get('/delete/:id', async (request, response) => {
+router.get('/delete/:id', isLoggedIn, async (request, response) => {
     const {id} = request.params;
     await pool.query('DELETE FROM links WHERE id = ?', [id]);
+    request.flash('success', 'Links removed successfully');
     response.redirect('/links');
 });
 
-router.get('/edit/:id', async (request, response) => {
+router.get('/edit/:id', isLoggedIn, async (request, response) => {
     const {id} = request.params;
     const link = await pool.query('SELECT * FROM links WHERE id = ?', [id]);
     response.render('links/edit', {link:link[0]});
 });
 
-router.post('/edit/:id', async (request,response) => {
+router.post('/edit/:id', isLoggedIn, async (request,response) => {
     const {id} = request.params;
     const { title, description, url} = request.body;
     const newLink = {
@@ -47,6 +48,7 @@ router.post('/edit/:id', async (request,response) => {
     };
 
     await pool.query('UPDATE links set ? WHERE id = ?' , [newLink, id]);
+    request.flash('success', 'Link updated successfully');
     response.redirect('/links');
 });
 
